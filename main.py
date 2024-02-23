@@ -1,9 +1,12 @@
+import os
 import requests
 from bs4 import BeautifulSoup
 import json
 import warnings
 import datetime
 from errors import StartDateError
+import pandas as pd
+from pandas.io.excel import ExcelWriter
 
 from DTOs.MassDay import MassDay
 
@@ -70,6 +73,75 @@ def get_masses_in_date_range(original_mass_days: list[MassDay], start_date: floa
 	return [mass_day for mass_day in original_mass_days if start_date <= mass_day.dayTS <= end_date]
 
 
+def create_excel_writer(filename: str, engine: str = 'xlsxwriter') -> ExcelWriter:
+	return pd.ExcelWriter(filename, engine=engine)
+
+
+def convert_unix_timestamp(timestamp):
+	# Convert Unix timestamp to a datetime object
+	dt_object = datetime.datetime.fromtimestamp(timestamp)
+
+	# Format the datetime object as per the specified format
+	formatted_date = dt_object.strftime('%A, %B %d, %Y')
+
+	return formatted_date
+
+
+def write_to_table(mass_days: list[MassDay], date_range_input: tuple[float, float]):
+	# Write the DataFrame to an Excel file
+	excel_file = 'server_schedules/output.xlsx'  # Specify the name of your Excel file
+	sheet_name = 'Sheet1'  # Specify the name of the sheet in the Excel file
+	# Define your data
+	data = [
+		{'Day': 'Monday', 'Time': '10:00 AM', 'Ceremony': 'Meeting'},
+		{'Day': 'Tuesday', 'Time': '2:00 PM', 'Ceremony': 'Presentation'},
+		{'Day': 'Wednesday', 'Time': '1:30 PM', 'Ceremony': 'Training'},
+		{'Day': 'Thursday', 'Time': '11:00 AM', 'Ceremony': 'Seminar'}
+	]
+
+	# Create a DataFrame from the data
+	server_df = pd.DataFrame(data)
+
+	if os.path.exists(excel_file):
+		os.remove(excel_file)  # Delete the existing file
+
+	with create_excel_writer(excel_file) as writer:
+		# Write the DataFrame to an Excel sheet
+		server_df.to_excel(writer, sheet_name='Ceremony Schedule', index=False, startrow=2)
+
+		# Get the workbook and the sheet
+		workbook = writer.book
+		worksheet = writer.sheets['Ceremony Schedule']
+
+		# Add title
+		title = "Server Schedule"
+		# https: // xlsxwriter.readthedocs.io / format.html  # format
+		title_format = workbook.add_format({'bold': True, 'font_size': 14, 'align': 'center', 'valign': 'vcenter', 'bg_color': 'red'})
+		title_range = 'A1:C1'  # Assuming the table starts from A2
+		worksheet.merge_range(title_range, title, title_format)
+
+		# Add subtitle
+		subtitle = f"{convert_unix_timestamp(date_range_input[0])} to {convert_unix_timestamp(date_range_input[1])}"
+		subtitle_format = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'font_size': 12, 'bg_color': 'red'})
+		worksheet.merge_range('A2:C2', subtitle, subtitle_format)
+
+		# Add header formatting
+		header_format = workbook.add_format(
+			{'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#4444FF', 'font_color': 'white'})
+		for col_num, value in enumerate(server_df.columns.values):
+			worksheet.write(2, col_num, value, header_format)
+
+		worksheet.set_column('A:A', 15)  # Day column
+		worksheet.set_column('B:B', 15)  # Time column
+		worksheet.set_column('C:C', 20)  # Ceremony column
+
+		# Add alternating row colors
+		blue_format = workbook.add_format({'bg_color': '#08f0f7'})
+
+		for row_num in range(3, len(server_df) + 3):  # Start from row 3, skipping the header, title, and column rows
+			if row_num % 2 != 0:
+				worksheet.set_row(row_num, None, blue_format)
+
 if __name__ == "__main__":
 	print('✝️ Server Schedule Generator ✝️')
 	print()
@@ -78,10 +150,13 @@ if __name__ == "__main__":
 	except requests.exceptions.RequestException as e:
 		print(f'Unable to fetch mass schedule. Error {e}')
 		raise e
-	date_range = prompt_for_dates()
-	# date_range = (1706813288, 1707590888)
-	mass_day_subset = get_masses_in_date_range(all_mass_days, date_range[0], date_range[1])
-	print(f'mass day subset {mass_day_subset}')
+	# date_range = prompt_for_dates()
+	date_range = (1706813288, 1707590888)
+	mass_days_subset: list[MassDay] = get_masses_in_date_range(all_mass_days, date_range[0], date_range[1])
+
+	write_to_table(mass_days_subset, date_range)
+
+	print(f'mass day subset {mass_days_subset}')
 
 
 
