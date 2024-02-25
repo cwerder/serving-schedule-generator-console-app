@@ -7,6 +7,7 @@ import datetime
 from errors import StartDateError
 import pandas as pd
 from pandas.io.excel import ExcelWriter
+import xlsxwriter
 
 from DTOs.MassDay import MassDay
 
@@ -27,8 +28,6 @@ def fetch_mass_schedule() -> list[MassDay]:
 	soup = BeautifulSoup(html_content, 'html.parser')
 
 	# Find the JSON string within the HTML (assuming it's embedded in a script tag)
-	# script_tags = soup.find_all('script')
-	# json_data = None
 	# Find all script tags
 	script_tags = soup.find_all('script')
 
@@ -90,57 +89,104 @@ def convert_unix_timestamp(timestamp):
 def write_to_table(mass_days: list[MassDay], date_range_input: tuple[float, float]):
 	# Write the DataFrame to an Excel file
 	excel_file = 'server_schedules/output.xlsx'  # Specify the name of your Excel file
-	sheet_name = 'Sheet1'  # Specify the name of the sheet in the Excel file
-	# Define your data
 	data = [
-		{'Day': 'Monday', 'Time': '10:00 AM', 'Ceremony': 'Meeting'},
-		{'Day': 'Tuesday', 'Time': '2:00 PM', 'Ceremony': 'Presentation'},
-		{'Day': 'Wednesday', 'Time': '1:30 PM', 'Ceremony': 'Training'},
-		{'Day': 'Thursday', 'Time': '11:00 AM', 'Ceremony': 'Seminar'}
+		{
+			'Date': 'Monday',
+			'Time': '10:00 AM',
+			'Ceremony': 'Meeting',
+			'Sacristan': 'David/Richard',
+			'Ac1': 'a',
+			'Ac2': 'b',
+			'MC': 'c',
+			'Th': 'd',
+			'Bb': 'e',
+			'Cb': 'f',
+			'Tb1': 'g',
+			'Tb2': 'h',
+			'Tb3': 'i',
+			'Tb4': 'j'
+		},
+		{
+			'Date': 'Monday',
+			'Time': '10:00 AM',
+			'Ceremony': 'Meeting',
+			'Sacristan': 'David/Richard',
+			'Ac1': 'a',
+			'Ac2': 'b',
+			'MC': 'c',
+			'Th': 'd',
+			'Bb': 'e',
+			'Cb': 'f',
+			'Tb1': 'g',
+			'Tb2': 'h',
+			'Tb3': 'i',
+			'Tb4': 'j'
+		},
+		{
+			'Date': 'Monday',
+			'Time': '10:00 AM',
+			'Ceremony': 'Meeting',
+			'Sacristan': 'David/Richard',
+			'Ac1': 'a',
+			'Ac2': 'b',
+			'MC': 'c',
+			'Th': 'd',
+			'Bb': 'e',
+			'Cb': 'f',
+			'Tb1': 'g',
+			'Tb2': 'h',
+			'Tb3': 'i',
+			'Tb4': 'j'
+		}
 	]
-
-	# Create a DataFrame from the data
 	server_df = pd.DataFrame(data)
 
 	if os.path.exists(excel_file):
-		os.remove(excel_file)  # Delete the existing file
+		os.remove(excel_file)
 
-	with create_excel_writer(excel_file) as writer:
-		# Write the DataFrame to an Excel sheet
-		server_df.to_excel(writer, sheet_name='Ceremony Schedule', index=False, startrow=2)
+	# Create an Excel workbook and add a worksheet
+	workbook = xlsxwriter.Workbook(excel_file)
+	worksheet = workbook.add_worksheet('Mass Schedule')
 
-		# Get the workbook and the sheet
-		workbook = writer.book
-		worksheet = writer.sheets['Ceremony Schedule']
+	# Add title
+	title = "Server Schedule"
+	# https: // xlsxwriter.readthedocs.io / format.html  # format
+	title_format = workbook.add_format({'bold': True, 'font_size': 14, 'align': 'center', 'valign': 'vcenter', 'bg_color': 'white'})
+	title_range = 'A1:N1'  # Assuming the table starts from A2
+	worksheet.merge_range(title_range, title, title_format)
 
-		# Add title
-		title = "Server Schedule"
-		# https: // xlsxwriter.readthedocs.io / format.html  # format
-		title_format = workbook.add_format({'bold': True, 'font_size': 14, 'align': 'center', 'valign': 'vcenter', 'bg_color': 'red'})
-		title_range = 'A1:C1'  # Assuming the table starts from A2
-		worksheet.merge_range(title_range, title, title_format)
+	# Add subtitle
+	subtitle = f"{convert_unix_timestamp(date_range_input[0])} to {convert_unix_timestamp(date_range_input[1])}"
+	subtitle_format = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'font_size': 12})
+	worksheet.merge_range('A2:N2', subtitle, subtitle_format)
 
-		# Add subtitle
-		subtitle = f"{convert_unix_timestamp(date_range_input[0])} to {convert_unix_timestamp(date_range_input[1])}"
-		subtitle_format = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'font_size': 12, 'bg_color': 'red'})
-		worksheet.merge_range('A2:C2', subtitle, subtitle_format)
+	# Convert DataFrame to a list of lists
+	data_list = server_df.values.tolist()
 
-		# Add header formatting
-		header_format = workbook.add_format(
-			{'bold': True, 'align': 'center', 'valign': 'vcenter', 'bg_color': '#4444FF', 'font_color': 'white'})
-		for col_num, value in enumerate(server_df.columns.values):
-			worksheet.write(2, col_num, value, header_format)
+	# Add header formatting
+	columns_format = workbook.add_format(
+		{'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': 1, 'bg_color': '#4444FF', 'font_color': 'white'})
 
-		worksheet.set_column('A:A', 15)  # Day column
-		worksheet.set_column('B:B', 15)  # Time column
-		worksheet.set_column('C:C', 20)  # Ceremony column
+	for col_num, col_val in enumerate(server_df.columns.values):
+		worksheet.write(2, col_num, col_val, columns_format)
 
-		# Add alternating row colors
-		blue_format = workbook.add_format({'bg_color': '#08f0f7'})
+	# # Write data to the worksheet
+	cell_format = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'border': 1})
+	cell_format_blue = workbook.add_format({'align': 'center', 'valign': 'vcenter', 'bg_color': '#ADD8E6', 'border': 1})
 
-		for row_num in range(3, len(server_df) + 3):  # Start from row 3, skipping the header, title, and column rows
-			if row_num % 2 != 0:
-				worksheet.set_row(row_num, None, blue_format)
+	for row_num, row_data in enumerate(data_list):
+		for col_num, value in enumerate(row_data):
+			if row_num % 2 == 0:
+				worksheet.write(3+row_num, col_num, value, cell_format_blue)
+			else:
+				worksheet.write(3+row_num, col_num, value, cell_format)
+
+	for col_num in range(len(data_list[0])):
+		worksheet.set_column(col_num, col_num, width=15)
+
+	# Close the workbook
+	workbook.close()
+
 
 if __name__ == "__main__":
 	print('✝️ Server Schedule Generator ✝️')
@@ -157,6 +203,8 @@ if __name__ == "__main__":
 	write_to_table(mass_days_subset, date_range)
 
 	print(f'mass day subset {mass_days_subset}')
+
+	print('Server Schedule successfully generated! Please navigate to ./server_schedules/output.xlsx.')
 
 
 
