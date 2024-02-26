@@ -1,0 +1,20 @@
+[
+	{
+		"name": "CJ",
+		"massesPositions": ["Low Mass"],
+		"rolesAvailable": ["Ac1, Ac2"],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday"],
+		"timesAvailable": ["9:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Luis",
+		"massesPositions": ["Low Mass"],
+		"rolesAvailable": ["Ac1, Ac2"],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday"],
+		"timesAvailable": ["9:00 am"],
+		"capacity": 3
+	}
+]
