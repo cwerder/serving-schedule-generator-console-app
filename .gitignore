@@ -1,2 +1,4 @@
 server_schedules/
 .idea/
+build/
+dist/
