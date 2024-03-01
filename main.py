@@ -6,7 +6,9 @@ import warnings
 import datetime
 from errors import StartDateError
 import pandas as pd
+from pandas import DataFrame
 import xlsxwriter
+import random
 
 from DTOs.MassDay import *
 from DTOs.ServerProfile import *
@@ -55,7 +57,7 @@ def prompt_for_dates() -> tuple[float, float]:
 			# The user will be providing EST dates, but the system will be interpreting as UTC dates
 			start_date_timestamp = datetime.datetime.strptime(start_date, '%Y-%m-%d').timestamp()
 			print(f"start time {start_date_timestamp}")
-			end_date = input("Please enter an end date (YYYY-MM-DD): (Note the end date is exclusive!) ")
+			end_date = input("Please enter an end date (YYYY-MM-DD): ")
 			end_date_timestamp = datetime.datetime.strptime(end_date, '%Y-%m-%d').timestamp()
 			print(f"end time {end_date_timestamp}")
 			if start_date_timestamp > end_date_timestamp:
@@ -83,10 +85,9 @@ def convert_unix_timestamp(timestamp):
 	return formatted_date
 
 
-def write_to_table(server_assignments_inside: list[dict], date_range_input: tuple[float, float]):
+def write_to_table(server_assignments_inside: list[dict], date_range_input: tuple[float, float], excel_file: str):
 	# Write the DataFrame to an Excel file
-	excel_file = 'server_schedules/output.xlsx'  # Specify the name of your Excel file
-	server_df = pd.DataFrame(server_assignments_inside)
+	server_df = pd.DataFrame(server_assignments_inside).fillna('')
 
 	if os.path.exists(excel_file):
 		os.remove(excel_file)
@@ -130,6 +131,11 @@ def write_to_table(server_assignments_inside: list[dict], date_range_input: tupl
 
 	worksheet.autofit()
 
+	# Set footer with current date
+	current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+	footer_text = f"&C{current_date}"
+	worksheet.set_footer(footer_text)
+
 	# Close the workbook
 	workbook.close()
 
@@ -151,11 +157,11 @@ def read_server_profiles(filename):
 			for profile_data in server_profiles_data:
 				profile = ServerProfile(
 					profile_data['name'],
-					profile_data['massesPositions'],
-					profile_data['rolesAvailable'],
+					profile_data['lowMassLevels'],
+					profile_data['highMassLevels'],
 					profile_data['datesUnavailable'],
 					profile_data['daysAvailable'],
-					profile_data['timesAvailable'],
+					profile_data['sundayTimesAvailable'],
 					profile_data['capacity']
 				)
 				server_profiles.append(profile)
@@ -167,41 +173,128 @@ def read_server_profiles(filename):
 		print(f"Error decoding JSON from file '{filename}'.")
 		raise e
 
+def convert_server_profiles_to_server_profiles_dictionary(server_profiles: list[ServerProfile]):
+	return [{
+		"name": server_profile.name,
+		"low_mass_levels": server_profile.low_mass_levels,
+		"high_mass_levels": server_profile.high_mass_levels,
+		"dates_unavailable": server_profile.dates_unavailable,
+		"days_available": server_profile.days_available,
+		"sunday_times_available": server_profile.sunday_times_available,
+		"capacity": server_profile.capacity
+	} for server_profile in server_profiles]
 
-def select_server(server_set: set[str], position: str, server_profiles: list[ServerProfile], server_frequency: dict[str, int], mass_day: MassDay, mass: Mass) -> ServerProfile:
-	return server_profiles[0]
+
+def low_mass_server_conditions(df: DataFrame, position: str, mass_day: MassDay, mass: Mass, server_frequency: dict[str, int]) -> list:
+	conditions = []
+	# Iterate over each condition and add it to the list of conditions
+	for condition_name, condition_func in [('low_mass_levels', lambda x: position in x),
+										('dates_unavailable', lambda x: mass_day.dayYMD not in x),
+										('days_available', lambda x: mass_day.day.split('-')[0].strip() in x),
+										('capacity', lambda x: server_frequency.get(x, 0) < df['capacity'])]:
+		condition = df.apply(lambda row: condition_func(row[condition_name]), axis=1)
+		conditions.append(condition)
+
+	return conditions
+
+def low_mass_server_conditions_sunday(df: DataFrame, position: str, mass_day: MassDay, mass: Mass, server_frequency: dict[str, int]) -> list:
+	conditions = low_mass_server_conditions(df, position, mass_day, mass, server_frequency)
+	conditions.append(df['sunday_times_available'].apply(lambda x: mass.time in x))
+	return conditions
+
+def high_mass_server_conditions(df: DataFrame, position: str, mass_day: MassDay, mass: Mass, server_frequency: dict[str, int]) -> list:
+	conditions = []
+	# Iterate over each condition and add it to the list of conditions
+	for condition_name, condition_func in [('high_mass_levels', lambda x: position in x),
+										('dates_unavailable', lambda x: mass_day.dayYMD not in x),
+										('days_available', lambda x: mass_day.day.split('-')[0].strip() in x),
+										('capacity', lambda x: server_frequency.get(x, 0) < df['capacity'])]:
+		condition = df.apply(lambda row: condition_func(row[condition_name]), axis=1)
+		conditions.append(condition)
+
+	return conditions
+
+def high_mass_server_conditions_sunday(df: DataFrame, position: str, mass_day: MassDay, mass: Mass, server_frequency: dict[str, int]) -> list:
+	conditions = high_mass_server_conditions(df, position, mass_day, mass, server_frequency)
+	conditions.append(df['sunday_times_available'].apply(lambda x: mass.time in x))
+	return conditions
 
 
-def generate_mass_assignments(server_assignments_for_mass: dict[str, str], server_frequency: dict[str, int], mass_day: MassDay, mass: Mass) -> None:
+def select_server(servers_for_the_day: set[str], position: str, server_profiles: list[ServerProfile], server_frequency: dict[str, int], mass_day: MassDay, mass: Mass) -> list:
+	if "benediction" in mass.description.lower():
+		# Benediction ceremony so you need to manually assign
+		random_server = ["No server assigned!"]
+		return random_server
+	server_profiles_dict = convert_server_profiles_to_server_profiles_dictionary(server_profiles)
+	server_options_df = pd.DataFrame(server_profiles_dict)
+	# Querying the DataFrame
+	if mass_day.day.split(' ')[0].lower() == "sunday":
+		if "low mass" in mass.description.lower():
+			conditions = low_mass_server_conditions_sunday(server_options_df, position, mass_day, mass, server_frequency)
+			combined_condition = pd.concat(conditions, axis=1).all(axis=1)
+			result_df = server_options_df[combined_condition]
+		else:
+			conditions = high_mass_server_conditions_sunday(server_options_df, position, mass_day, mass, server_frequency)
+			combined_condition = pd.concat(conditions, axis=1).all(axis=1)
+			result_df = server_options_df[combined_condition]
+	# if not Sunday Mass, we do not consider times available
+	else:
+		if "low mass" in mass.description.lower():
+			conditions = low_mass_server_conditions(server_options_df, position, mass_day, mass, server_frequency)
+			# Apply all conditions to get the final boolean mask
+			combined_condition = pd.concat(conditions, axis=1).all(axis=1)
+
+			# Filter the DataFrame based on the combined condition
+			result_df = server_options_df[combined_condition]
+		else:
+			conditions = high_mass_server_conditions(server_options_df, position, mass_day, mass, server_frequency)
+			combined_condition = pd.concat(conditions, axis=1).all(axis=1)
+			result_df = server_options_df[combined_condition]
+
+	# Remove servers whose name is present in server_set
+	df_filtered_result = result_df[~result_df['name'].isin(servers_for_the_day)]
+
+	# Extracting the list of servers available
+	servers_available = df_filtered_result.values.tolist()
+
+	try:
+		random_server = random.choice(servers_available)
+	except IndexError:
+		random_server = ["No server assigned!"]
+
+	return random_server
+
+
+def generate_server_assignments(server_assignments_for_mass: dict[str, str], server_frequency: dict[str, int], mass_day: MassDay, mass: Mass, servers_for_the_day: set[str]) -> None:
 	server_profiles = read_server_profiles('./db/ServerProfiles.json')
 
-	server_positions: list[str] = ["Ac1", "Ac2", "MC", "Th", "Bb", "Cb", "Tb1", "Tb2", "Tb3", "Tb4"]
-	server_set: set[str] = set()
+	if "sung mass" in mass.description.lower():
+		server_positions: list[str] = ["Ac1", "Ac2", "MC", "Th", "Bb", "Cb", "Tb1", "Tb2", "Tb3", "Tb4"]
+	elif "benediction" in mass.description.lower():
+		server_positions: list[str] = ["Ac1", "Ac2", "MC", "Th"]
+	else:
+		server_positions: list[str] = ["Ac1", "Ac2"]
 	for position in server_positions:
-		if position not in ("Ac1", "Ac2") and "low mass" in mass.description.lower():
-			server_assignments_for_mass[position] = ""
-		elif position not in ("Ac1", "Ac2", "MC", "Th") and "benediction" in mass.description.lower():
-			server_assignments_for_mass[position] = ""
-		else:
-			selected_server = select_server(server_set, position, server_profiles, server_frequency, mass_day, mass)
-			server_set.add(selected_server.name)
-			server_assignments_for_mass[position] = selected_server.name
+		selected_server = select_server(servers_for_the_day, position, server_profiles, server_frequency, mass_day, mass)[0]
+		servers_for_the_day.add(selected_server)
+		server_frequency[selected_server] = server_frequency.setdefault(selected_server, 0) + 1
+		server_assignments_for_mass[position] = selected_server
 
-def generate_assignments(mass_days: list[MassDay], range_of_dates: tuple[float, float]) -> list[dict]:
+def generate_assignments(mass_days: list[MassDay]) -> list[dict]:
 	server_assignments_result: list[dict] = []
 	server_frequency: dict[str, int] = {}
 	for mass_day in mass_days:
+		servers_for_the_day = set[str]()
 		for mass in mass_day.masses:
-			server_assignment_for_mass: dict = {}
+			server_assignment_for_mass: dict[str, str] = {}
 			server_assignment_for_mass['Date'] = get_date_from_timestamp(datetime.datetime.strptime(mass_day.dayYMD, '%Y-%m-%d').timestamp())
 			server_assignment_for_mass['Time'] = mass.time
 			server_assignment_for_mass['Ceremony'] = mass.description
-			if mass.description.lower() == "high mass":
+			if "sung mass" in mass.description.lower():
 				server_assignment_for_mass['Sacristan'] = "Rick"
 			else:
 				server_assignment_for_mass['Sacristan'] = "David/Richard"
-				server_assignment_for_mass['Ac1'] = "CJ"
-			generate_mass_assignments(server_assignment_for_mass, server_frequency, mass_day, mass)
+			generate_server_assignments(server_assignment_for_mass, server_frequency, mass_day, mass, servers_for_the_day)
 			server_assignments_result.append(server_assignment_for_mass)
 	return server_assignments_result
 
@@ -223,19 +316,16 @@ if __name__ == "__main__":
 	except requests.exceptions.RequestException as e:
 		print(f'Unable to fetch mass schedule. Error {e}')
 		raise e
-	# date_range = prompt_for_dates()
-	# date_range = (1706813288, 1707590888)
-	# GMT timestamp 1706832000 uses UTC on Friday at 12am
-	date_range = (1705294800.0, 1709269200.0)
+	date_range = prompt_for_dates()
+	# uncomment below for rapid testing
+	# date_range = (1705294800.0, 1709269200.0)
 	mass_days_subset: list[MassDay] = get_masses_in_date_range(all_mass_days, date_range[0], date_range[1])
 
-	server_assignments = generate_assignments(mass_days_subset, date_range)
+	server_assignments = generate_assignments(mass_days_subset)
 
-	write_to_table(server_assignments, date_range)
+	current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
+	excel_file = f'server_schedules/{current_timestamp}.xlsx'
+	write_to_table(server_assignments, date_range, excel_file)
 
-	# print(f'mass day subset {mass_days_subset}')
-
-	print('Server Schedule successfully generated! Please navigate to ./server_schedules/output.xlsx.')
-
-
+	print(f'Server Schedule successfully generated! Please navigate to {excel_file}')
 
