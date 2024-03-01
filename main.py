@@ -9,6 +9,7 @@ import pandas as pd
 from pandas import DataFrame
 import xlsxwriter
 import random
+import sys
 
 from DTOs.MassDay import *
 from DTOs.ServerProfile import *
@@ -56,10 +57,8 @@ def prompt_for_dates() -> tuple[float, float]:
 			start_date = input("Please enter a start date (YYYY-MM-DD): ")
 			# The user will be providing EST dates, but the system will be interpreting as UTC dates
 			start_date_timestamp = datetime.datetime.strptime(start_date, '%Y-%m-%d').timestamp()
-			print(f"start time {start_date_timestamp}")
 			end_date = input("Please enter an end date (YYYY-MM-DD): ")
 			end_date_timestamp = datetime.datetime.strptime(end_date, '%Y-%m-%d').timestamp()
-			print(f"end time {end_date_timestamp}")
 			if start_date_timestamp > end_date_timestamp:
 				raise StartDateError()
 			return start_date_timestamp, end_date_timestamp
@@ -68,6 +67,18 @@ def prompt_for_dates() -> tuple[float, float]:
 		except ValueError:
 			# If parsing fails (ValueError), print an error message and continue to the next iteration
 			print("Invalid date format. Please enter the date in YYYY-MM-DD format.")
+
+
+def change_project_root_directory():
+	# If the application is frozen using something like PyInstaller,
+	# the path is set in sys.executable. Otherwise, __file__ is used.
+	if getattr(sys, 'frozen', False):
+		application_path = os.path.abspath(os.path.join(os.path.abspath(sys.executable), os.pardir))
+	else:
+		application_path = os.path.abspath(os.path.join(os.path.abspath(__file__), os.pardir))
+
+	os.chdir(os.path.dirname(application_path))
+	return application_path
 
 
 def get_masses_in_date_range(original_mass_days: list[MassDay], start_date: float, end_date: float) -> list[MassDay]:
@@ -85,20 +96,33 @@ def convert_unix_timestamp(timestamp):
 	return formatted_date
 
 
-def write_to_table(server_assignments_inside: list[dict], date_range_input: tuple[float, float], excel_file: str):
+def write_to_table(server_assignments_inside: list[dict], date_range_input: tuple[float, float], application_directory: str) -> str:
+	output_dir = os.path.join(application_directory, 'server_schedules')
+
+	# Ensure the output directory exists
+	if not os.path.exists(output_dir):
+		os.makedirs(output_dir)
+
+	current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
+	excel_file = f'{current_timestamp}.xlsx'
+
+	# Path to the server schedule xlsx file.
+	excel_file_path = os.path.join(output_dir, excel_file)
+
 	# Write the DataFrame to an Excel file
 	server_df = pd.DataFrame(server_assignments_inside).fillna('')
 
-	if os.path.exists(excel_file):
-		os.remove(excel_file)
+	# Delete if there is already a file there with matching name
+	if os.path.exists(excel_file_path):
+		os.remove(excel_file_path)
 
 	# Create an Excel workbook and add a worksheet
-	workbook = xlsxwriter.Workbook(excel_file)
+	workbook = xlsxwriter.Workbook(excel_file_path)
 	worksheet = workbook.add_worksheet('Mass Schedule')
 
 	# Add title
-	title = "Server Schedule"
 	# https: // xlsxwriter.readthedocs.io / format.html  # format
+	title = "Server Schedule"
 	title_format = workbook.add_format({'bold': True, 'font_size': 14, 'align': 'center', 'valign': 'vcenter', 'bg_color': 'white'})
 	title_range = 'A1:N1'  # Assuming the table starts from A2
 	worksheet.merge_range(title_range, title, title_format)
@@ -138,6 +162,8 @@ def write_to_table(server_assignments_inside: list[dict], date_range_input: tupl
 
 	# Close the workbook
 	workbook.close()
+
+	return excel_file_path
 
 def get_date_from_timestamp(ts: float):
 	dt_object = datetime.datetime.fromtimestamp(ts)
@@ -266,7 +292,11 @@ def select_server(servers_for_the_day: set[str], position: str, server_profiles:
 
 
 def generate_server_assignments(server_assignments_for_mass: dict[str, str], server_frequency: dict[str, int], mass_day: MassDay, mass: Mass, servers_for_the_day: set[str]) -> None:
-	server_profiles = read_server_profiles('./db/ServerProfiles.json')
+	# Path to the directory of the current script
+	app_dir = os.path.dirname(os.path.abspath(__file__))
+	# Path to the ServerProfiles.json file
+	json_file_path = os.path.join(app_dir, 'db', 'ServerProfiles.json')
+	server_profiles = read_server_profiles(json_file_path)
 
 	if "sung mass" in mass.description.lower():
 		server_positions: list[str] = ["Ac1", "Ac2", "MC", "Th", "Bb", "Cb", "Tb1", "Tb2", "Tb3", "Tb4"]
@@ -316,6 +346,7 @@ if __name__ == "__main__":
 	except requests.exceptions.RequestException as e:
 		print(f'Unable to fetch mass schedule. Error {e}')
 		raise e
+	application_directory = change_project_root_directory()
 	date_range = prompt_for_dates()
 	# uncomment below for rapid testing
 	# date_range = (1705294800.0, 1709269200.0)
@@ -323,9 +354,7 @@ if __name__ == "__main__":
 
 	server_assignments = generate_assignments(mass_days_subset)
 
-	current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
-	excel_file = f'server_schedules/{current_timestamp}.xlsx'
-	write_to_table(server_assignments, date_range, excel_file)
+	excel_file_path = write_to_table(server_assignments, date_range, application_directory)
 
-	print(f'Server Schedule successfully generated! Please navigate to {excel_file}')
+	print(f'Server Schedule successfully generated! Please navigate to {excel_file_path}')
 
