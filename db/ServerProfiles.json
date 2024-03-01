@@ -1,20 +1,222 @@
 [
 	{
 		"name": "CJ",
-		"massesPositions": ["Low Mass"],
-		"rolesAvailable": ["Ac1, Ac2"],
-		"datesUnavailable": [],
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": ["2024-02-02"],
 		"daysAvailable": ["Sunday"],
-		"timesAvailable": ["9:00 am"],
+		"sundayTimesAvailable": ["9:00 am"],
 		"capacity": 3
 	},
 	{
 		"name": "Luis",
-		"massesPositions": ["Low Mass"],
-		"rolesAvailable": ["Ac1, Ac2"],
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["7:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Gabriel",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": ["MC", "Th"],
+		"benedictionLevels": ["Ac1", "Ac2", "MC", "Th"],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Marco",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": ["Ac1", "Ac2" ,"Th"],
+		"benedictionLevels": ["Ac1", "Ac2", "Th"],
 		"datesUnavailable": [],
 		"daysAvailable": ["Sunday"],
-		"timesAvailable": ["9:00 am"],
+		"sundayTimesAvailable": ["7:00 am", "9:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Angel",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday"],
+		"sundayTimesAvailable": ["9:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Jacob",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": ["Ac1", "Ac2"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["7:00 am", "9:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Ronnie",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": ["MC", "Th"],
+		"benedictionLevels": ["Ac1", "Ac2", "MC", "Th"],
+		"datesUnavailable": ["2024-02-02"],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["9:00 am", "11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "JC",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["7:00 am", "9:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Devin",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Bryan",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Dennis",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Mike",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday"],
+		"sundayTimesAvailable": ["9:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "David",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": [],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["9:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Brent",
+		"lowMassLevels": [],
+		"highMassLevels": ["MC", "Th"],
+		"benedictionLevels": ["MC", "Th"],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Abdiel",
+		"lowMassLevels": ["Ac1", "Ac2"],
+		"highMassLevels": ["Ac1", "Ac2", "MC", "Th"],
+		"benedictionLevels": ["Ac1", "Ac2", "MC", "Th"],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 4
+	},
+	{
+		"name": "Maddox",
+		"lowMassLevels": [],
+		"highMassLevels": ["Ac1", "Ac2"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Samuel",
+		"lowMassLevels": [],
+		"highMassLevels": ["Bb", "Cb", "Tb1","Tb2", "Tb3", "Tb4"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Jose Miguel",
+		"lowMassLevels": [],
+		"highMassLevels": ["Bb", "Cb", "Tb1","Tb2", "Tb3", "Tb4"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Eddyson",
+		"lowMassLevels": [],
+		"highMassLevels": ["Bb", "Cb", "Tb1","Tb2", "Tb3", "Tb4"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Jose Miguel",
+		"lowMassLevels": [],
+		"highMassLevels": ["Bb", "Cb", "Tb1","Tb2", "Tb3", "Tb4"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Albert",
+		"lowMassLevels": [],
+		"highMassLevels": ["Bb", "Cb", "Tb1","Tb2", "Tb3", "Tb4"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
+		"capacity": 3
+	},
+	{
+		"name": "Ben",
+		"lowMassLevels": [],
+		"highMassLevels": ["Bb", "Cb", "Tb1","Tb2", "Tb3", "Tb4"],
+		"benedictionLevels": [],
+		"datesUnavailable": [],
+		"daysAvailable": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+		"sundayTimesAvailable": ["11:00 am"],
 		"capacity": 3
 	}
 ]
