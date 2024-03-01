@@ -57,7 +57,7 @@ def prompt_for_dates() -> tuple[float, float]:
 			# The user will be providing EST dates, but the system will be interpreting as UTC dates
 			start_date_timestamp = datetime.datetime.strptime(start_date, '%Y-%m-%d').timestamp()
 			print(f"start time {start_date_timestamp}")
-			end_date = input("Please enter an end date (YYYY-MM-DD): (Note the end date is exclusive!) ")
+			end_date = input("Please enter an end date (YYYY-MM-DD): ")
 			end_date_timestamp = datetime.datetime.strptime(end_date, '%Y-%m-%d').timestamp()
 			print(f"end time {end_date_timestamp}")
 			if start_date_timestamp > end_date_timestamp:
@@ -85,9 +85,8 @@ def convert_unix_timestamp(timestamp):
 	return formatted_date
 
 
-def write_to_table(server_assignments_inside: list[dict], date_range_input: tuple[float, float]):
+def write_to_table(server_assignments_inside: list[dict], date_range_input: tuple[float, float], excel_file: str):
 	# Write the DataFrame to an Excel file
-	excel_file = 'server_schedules/output.xlsx'  # Specify the name of your Excel file
 	server_df = pd.DataFrame(server_assignments_inside).fillna('')
 
 	if os.path.exists(excel_file):
@@ -132,6 +131,11 @@ def write_to_table(server_assignments_inside: list[dict], date_range_input: tupl
 
 	worksheet.autofit()
 
+	# Set footer with current date
+	current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+	footer_text = f"&C{current_date}"
+	worksheet.set_footer(footer_text)
+
 	# Close the workbook
 	workbook.close()
 
@@ -155,7 +159,6 @@ def read_server_profiles(filename):
 					profile_data['name'],
 					profile_data['lowMassLevels'],
 					profile_data['highMassLevels'],
-					profile_data['benedictionLevels'],
 					profile_data['datesUnavailable'],
 					profile_data['daysAvailable'],
 					profile_data['sundayTimesAvailable'],
@@ -175,7 +178,6 @@ def convert_server_profiles_to_server_profiles_dictionary(server_profiles: list[
 		"name": server_profile.name,
 		"low_mass_levels": server_profile.low_mass_levels,
 		"high_mass_levels": server_profile.high_mass_levels,
-		"benediction_levels": server_profile.benediction_levels,
 		"dates_unavailable": server_profile.dates_unavailable,
 		"days_available": server_profile.days_available,
 		"sunday_times_available": server_profile.sunday_times_available,
@@ -219,6 +221,10 @@ def high_mass_server_conditions_sunday(df: DataFrame, position: str, mass_day: M
 
 
 def select_server(servers_for_the_day: set[str], position: str, server_profiles: list[ServerProfile], server_frequency: dict[str, int], mass_day: MassDay, mass: Mass) -> list:
+	if "benediction" in mass.description.lower():
+		# Benediction ceremony so you need to manually assign
+		random_server = ["No server assigned!"]
+		return random_server
 	server_profiles_dict = convert_server_profiles_to_server_profiles_dictionary(server_profiles)
 	server_options_df = pd.DataFrame(server_profiles_dict)
 	# Querying the DataFrame
@@ -254,7 +260,6 @@ def select_server(servers_for_the_day: set[str], position: str, server_profiles:
 	try:
 		random_server = random.choice(servers_available)
 	except IndexError:
-		print('No server was able to be found for this mass.')
 		random_server = ["No server assigned!"]
 
 	return random_server
@@ -265,18 +270,15 @@ def generate_server_assignments(server_assignments_for_mass: dict[str, str], ser
 
 	if "sung mass" in mass.description.lower():
 		server_positions: list[str] = ["Ac1", "Ac2", "MC", "Th", "Bb", "Cb", "Tb1", "Tb2", "Tb3", "Tb4"]
+	elif "benediction" in mass.description.lower():
+		server_positions: list[str] = ["Ac1", "Ac2", "MC", "Th"]
 	else:
 		server_positions: list[str] = ["Ac1", "Ac2"]
 	for position in server_positions:
-		if position not in ("Ac1", "Ac2") and "low mass" in mass.description.lower():
-			server_assignments_for_mass[position] = ""
-		elif "benediction" in mass.description.lower():
-			server_assignments_for_mass[position] = ""
-		else:
-			selected_server = select_server(servers_for_the_day, position, server_profiles, server_frequency, mass_day, mass)[0]
-			servers_for_the_day.add(selected_server)
-			server_frequency[selected_server] = server_frequency.setdefault(selected_server, 0) + 1
-			server_assignments_for_mass[position] = selected_server
+		selected_server = select_server(servers_for_the_day, position, server_profiles, server_frequency, mass_day, mass)[0]
+		servers_for_the_day.add(selected_server)
+		server_frequency[selected_server] = server_frequency.setdefault(selected_server, 0) + 1
+		server_assignments_for_mass[position] = selected_server
 
 def generate_assignments(mass_days: list[MassDay]) -> list[dict]:
 	server_assignments_result: list[dict] = []
@@ -315,12 +317,15 @@ if __name__ == "__main__":
 		print(f'Unable to fetch mass schedule. Error {e}')
 		raise e
 	date_range = prompt_for_dates()
+	# uncomment below for rapid testing
 	# date_range = (1705294800.0, 1709269200.0)
 	mass_days_subset: list[MassDay] = get_masses_in_date_range(all_mass_days, date_range[0], date_range[1])
 
 	server_assignments = generate_assignments(mass_days_subset)
 
-	write_to_table(server_assignments, date_range)
+	current_timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
+	excel_file = f'server_schedules/{current_timestamp}.xlsx'
+	write_to_table(server_assignments, date_range, excel_file)
 
-	print('Server Schedule successfully generated! Please navigate to ./server_schedules/output.xlsx.')
+	print(f'Server Schedule successfully generated! Please navigate to {excel_file}')
 
