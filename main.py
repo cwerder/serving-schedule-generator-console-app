@@ -330,7 +330,7 @@ def generate_assignments(mass_days: list[MassDay]) -> list[dict]:
 
 
 def filter_for_masses(mass_days_subset_internal: list[MassDay]) -> list[MassDay]:
-	for key, value in enumerate(mass_days_subset_internal):
+	for key, _ in enumerate(mass_days_subset_internal):
 		filtered_for_masses: list[MassDay] = filter(
 			lambda mass: any(keyword in mass.description.lower() for keyword in ("sung mass", "low mass", "benediction"))
 			, mass_days_subset_internal[key].masses)
@@ -338,7 +338,7 @@ def filter_for_masses(mass_days_subset_internal: list[MassDay]) -> list[MassDay]
 	return list(filter(lambda mass_day: len(mass_day.masses) > 0, mass_days_subset_internal))
 
 
-if __name__ == "__main__":
+def generate_server_schedule():
 	print('✝️ Server Schedule Generator ✝️')
 	print()
 	try:
@@ -358,3 +358,6 @@ if __name__ == "__main__":
 
 	print(f'Server Schedule successfully generated! Please navigate to {excel_file_path}')
 
+
+if __name__ == "__main__":
+	generate_server_schedule()
