@@ -20,7 +20,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='server-scheduler-generator',
+    name='server-schedule-generator',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

@@ -3,7 +3,7 @@
 		"name": "CJ",
 		"lowMassLevels": ["Ac1", "Ac2"],
 		"highMassLevels": [],
-		"datesUnavailable": ["2024-02-02"],
+		"datesUnavailable": [],
 		"daysAvailable": ["Sunday"],
 		"sundayTimesAvailable": ["9:00 am"],
 		"capacity": 3
